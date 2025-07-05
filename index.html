@@ -730,12 +730,12 @@
                 
                 <div class="form-group">
                     <label for="totalSeats"><i class="fas fa-chair"></i> 大巴总座位数（含司机）</label>
-                    <input type="number" id="totalSeats" min="5" max="60" value="21">
+                    <input type="number" id="totalSeats" min="5" max="60" value="22">
                 </div>
                 
                 <div class="form-group">
                     <label for="reservedSeats"><i class="fas fa-lock"></i> 预留座位号（多个用空格分隔，如：3 5 7）</label>
-                    <input type="text" id="reservedSeats" placeholder="输入预留座位号" value="3 5 7 9">
+                    <input type="text" id="reservedSeats" placeholder="输入预留座位号" value="1 2 3 4">
                 </div>
                 
                 <div class="form-group">
@@ -833,10 +833,10 @@
         <div class="instructions">
             <h3><i class="fas fa-info-circle"></i> 使用说明</h3>
             <ul>
-                <li><strong>大巴车型选择</strong>：支持2+2普通大巴（左右各2座位）和2+1豪华大巴（左二右一）两种车型</li>
-                <li><strong>大巴座位布局</strong>：第一行为司机（单独），座位号为0，乘客座位号从1开始</li>
-                <li><strong>行号显示</strong>：每行座位左侧显示中文大写数字（壹、贰、叁...）</li>
-                <li><strong>预留座位</strong>：输入座位号（如"3 5 7"），这些座位将不会分配给乘客</li>
+                <li><strong>大巴车型选择</strong>：支持2+2普通大巴和2+1豪华大巴两种车型</li>
+                <li><strong>大巴座位布局</strong>：第一行为司机，乘客座位号从1开始</li>
+                <li><strong>行号显示</strong>：每行座位左侧显示用中文大写数字表示行数</li>
+                <li><strong>预留座位</strong>：输入座位号（如"1 2 3"），这些座位将不会分配给乘客，默认已预留第一排作为导游座</li>
                 <li><strong>乘客信息</strong>：每行一组，双人组用"+"连接（如：张三+李四），单人单独一行</li>
                 <li><strong>抽签规则</strong>：双人组和单人组优先级相同，随机排序分配</li>
                 <li><span class="rule-highlight">单人乘客分配规则</span>：
