@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>旅游大巴座位抽签系统</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #3498db;
+            --secondary: #2ecc71;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+            --light: #f8f9fa;
+            --dark: #343a40;
+            --bus-color: #e74c3c;
+            --driver-seat: #2c3e50;
+            --available-seat: #ecf0f1;
+            --reserved-seat: #95a5a6;
+            --occupied-seat: #2ecc71;
+            --single-seat: #9b59b6;
+            --aisle: #7f8c8d;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            line-height: 1.6;
+            background: linear-gradient(135deg, #f0f7ff 0%, #e1f0ff 100%);
+            color: #333;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 25px;
+            background: linear-gradient(135deg, #3498db, #2c3e50);
+            color: white;
+            border-radius: 15px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+            animation: fadeInDown 0.8s ease;
+        }
+        
+        h1 {
+            margin-bottom: 10px;
+            font-size: 2.4rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            max-width: 700px;
+            margin: 0 auto;
+            opacity: 0.9;
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        @media (max-width: 900px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+            transition: all 0.4s ease;
+            animation: fadeIn 0.8s ease;
+            animation-delay: 0.2s;
+            animation-fill-mode: both;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+        
+        .card h2 {
+            color: var(--primary);
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #444;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        input, textarea, button {
+            width: 100%;
+            padding: 14px 18px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        input:focus, textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+            outline: none;
+        }
+        
+        textarea {
+            min-height: 140px;
+            resize: vertical;
+        }
+        
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        button:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        button::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: rgba(255, 255, 255, 0.1);
+            transform: scale(0);
+            transition: transform 0.6s;
+            border-radius: 50%;
+        }
+        
+        button:active::after {
+            transform: scale(1);
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .btn-group button {
+            flex: 1;
+        }
+        
+        .btn-draw {
+            background: var(--secondary);
+        }
+        
+        .btn-draw:hover {
+            background: #27ae60;
+        }
+        
+        .btn-reset {
+            background: var(--warning);
+        }
+        
+        .btn-reset:hover {
+            background: #e67e22;
+        }
+        
+        .seat-layout {
+            margin-top: 30px;
+        }
+        
+        .bus-container {
+            perspective: 1000px;
+        }
+        
+        .bus {
+            position: relative;
+            background: var(--bus-color);
+            border-radius: 20px 80px 10px 10px;
+            padding: 25px 20px 15px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+            transform-style: preserve-3d;
+            animation: busEntrance 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        .bus::before {
+            content: "";
+            position: absolute;
+            top: 20px;
+            left: 0;
+            width: 40px;
+            height: 70px;
+            background: #3498db;
+            border-radius: 0 8px 8px 0;
+            box-shadow: 3px 0 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        .bus::after {
+            content: "";
+            position: absolute;
+            bottom: 15px;
+            right: 25px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #2c3e50;
+            border: 6px solid #7f8c8d;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .driver-seat {
+            background: var(--driver-seat);
+            color: white;
+            padding: 18px;
+            text-align: center;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            max-width: 200px;
+            margin-left: 10px;
+            animation: fadeIn 0.8s ease;
+        }
+        
+        .seat-rows {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .seat-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            position: relative;
+        }
+        
+        .row-number {
+            position: absolute;
+            left: -25px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 22px;
+            font-weight: bold;
+            color: #2c3e50;
+            background: #ffd700;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+            z-index: 2;
+        }
+        
+        .left-seats, .right-seats {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .aisle {
+            width: 40px;
+            background: #d1d8da;
+            border-radius: 5px;
+            margin: 0 10px;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .seat {
+            width: 85px;
+            background: var(--available-seat);
+            border: 1px solid #bdc3c7;
+            border-radius: 8px;
+            padding: 15px 10px;
+            text-align: center;
+            position: relative;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            min-height: 90px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+            animation: seatAppear 0.6s ease-out;
+            animation-fill-mode: both;
+        }
+        
+        .seat:hover {
+            transform: translateY(-8px) scale(1.03);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            z-index: 2;
+        }
+        
+        .seat-number {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #7f8c8d;
+            background: rgba(255, 255, 255, 0.7);
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .passenger-name {
+            font-weight: 600;
+            margin: 5px 0;
+            font-size: 15px;
+        }
+        
+        .seat.reserved {
+            background: var(--reserved-seat);
+            color: white;
+        }
+        
+        .seat.occupied {
+            background: var(--occupied-seat);
+            color: white;
+        }
+        
+        .seat.single {
+            background: var(--single-seat);
+            color: white;
+        }
+        
+        .seat.single-occupied {
+            background: #f39c12;
+            color: white;
+        }
+        
+        .results {
+            margin-top: 30px;
+        }
+        
+        .passenger-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 18px;
+            margin-top: 20px;
+        }
+        
+        .passenger-item {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            text-align: center;
+            transition: all 0.3s ease;
+            animation: fadeInUp 0.5s ease;
+        }
+        
+        .passenger-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+        }
+        
+        .passenger-item.group {
+            background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+        }
+        
+        .passenger-item.single {
+            background: linear-gradient(135deg, #f3e5f5, #e1bee7);
+        }
+        
+        .passenger-item.single-occupied {
+            background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+        }
+        
+        .group-header {
+            font-weight: 700;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 2px dashed rgba(0, 0, 0, 0.1);
+            color: #2c3e50;
+        }
+        
+        .legend {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 18px;
+            margin-top: 25px;
+            background: rgba(255, 255, 255, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .legend-color {
+            width: 22px;
+            height: 22px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .legend-driver { background: var(--driver-seat); }
+        .legend-available { background: var(--available-seat); }
+        .legend-reserved { background: var(--reserved-seat); }
+        .legend-occupied { background: var(--occupied-seat); }
+        .legend-single { background: var(--single-seat); }
+        .legend-single-occupied { background: #f39c12; }
+        
+        .instructions {
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            padding: 25px;
+            border-radius: 15px;
+            margin-top: 35px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            animation: fadeInUp 0.8s ease;
+        }
+        
+        .instructions h3 {
+            margin-bottom: 15px;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .instructions ul {
+            padding-left: 25px;
+        }
+        
+        .instructions li {
+            margin-bottom: 12px;
+            line-height: 1.7;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            padding: 25px;
+            color: #7f8c8d;
+            font-size: 15px;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        .empty-row {
+            text-align: center;
+            padding: 30px;
+            color: #7f8c8d;
+            font-style: italic;
+            animation: fadeIn 1s ease;
+        }
+        
+        .system-info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 25px;
+            padding: 18px;
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            border-radius: 10px;
+            font-size: 15px;
+        }
+        
+        .info-item {
+            text-align: center;
+            flex: 1;
+        }
+        
+        .info-value {
+            font-weight: bold;
+            font-size: 20px;
+            color: var(--primary);
+            margin-top: 5px;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-ready {
+            background-color: var(--secondary);
+        }
+        
+        .status-waiting {
+            background-color: var(--warning);
+        }
+        
+        .progress-container {
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: var(--primary);
+            border-radius: 4px;
+            transition: width 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            border-radius: 15px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.4s ease;
+        }
+        
+        .loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid rgba(52, 152, 219, 0.2);
+            border-top: 5px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        .loading-text {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+        
+        .rule-highlight {
+            background: #fff9c4;
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        
+        /* 新增的CSS样式 */
+        .bus-type-selector {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .bus-type-option {
+            flex: 1;
+            padding: 15px;
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .bus-type-option.active {
+            border-color: var(--primary);
+            background: rgba(52, 152, 219, 0.1);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+        
+        .bus-type-option i {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            color: var(--primary);
+        }
+        
+        .bus-type-option h3 {
+            margin-bottom: 5px;
+            color: var(--dark);
+        }
+        
+        .bus-type-option p {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes busEntrance {
+            from {
+                opacity: 0;
+                transform: translateY(100px) rotateX(60deg);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) rotateX(0);
+            }
+        }
+        
+        @keyframes seatAppear {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-bus"></i> 旅游大巴座位抽签系统</h1>
+        </header>
+        
+        <div class="dashboard">
+            <div class="card">
+                <h2><i class="fas fa-cog"></i> 系统设置</h2>
+                
+                <!-- 新增车型选择器 -->
+                <div class="form-group">
+                    <label><i class="fas fa-bus-alt"></i> 选择大巴车型</label>
+                    <div class="bus-type-selector">
+                        <div class="bus-type-option active" data-type="2+2">
+                            <i class="fas fa-bus"></i>
+                            <h3>2+2普通大巴</h3>
+                        </div>
+                        <div class="bus-type-option" data-type="2+1">
+                            <i class="fas fa-bus"></i>
+                            <h3>2+1豪华大巴</h3>
+                        </div>
+                    </div>
+                    <input type="hidden" id="busType" value="2+2">
+                </div>
+                
+                <div class="form-group">
+                    <label for="totalSeats"><i class="fas fa-chair"></i> 大巴总座位数（含司机）</label>
+                    <input type="number" id="totalSeats" min="5" max="60" value="21">
+                </div>
+                
+                <div class="form-group">
+                    <label for="reservedSeats"><i class="fas fa-lock"></i> 预留座位号（多个用空格分隔，如：3 5 7）</label>
+                    <input type="text" id="reservedSeats" placeholder="输入预留座位号" value="3 5 7 9">
+                </div>
+                
+                <div class="form-group">
+                    <label for="passengerData"><i class="fas fa-users"></i> 乘客信息（一行一组，双人用+连接）</label>
+                    <textarea id="passengerData" placeholder="例如：
+张三+李四
+王五
+赵六+钱七
+孙八
+周九+吴十">张三+李四
+王五
+赵六+钱七
+孙八
+周九+吴十
+郑十一
+钱十二+孙十三
+林十四
+杨十五
+陈十六</textarea>
+                </div>
+                
+                <div class="system-info">
+                    <div class="info-item">
+                        <div>系统状态</div>
+                        <div><span class="status-indicator status-ready"></span> <span id="systemStatus">准备就绪</span></div>
+                    </div>
+                    <div class="info-item">
+                        <div>座位使用率</div>
+                        <div class="info-value" id="seatUsage">0%</div>
+                        <div class="progress-container">
+                            <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="btn-group">
+                    <button class="btn-draw" id="drawBtn"><i class="fas fa-random"></i> 开始抽签分配</button>
+                    <button class="btn-reset" id="resetBtn"><i class="fas fa-redo"></i> 重置系统</button>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2><i class="fas fa-map-marked-alt"></i> 座位布局预览</h2>
+                <div class="seat-layout" id="seatLayout">
+                    <div class="bus-container">
+                        <div class="bus">
+                            <div class="loading-overlay" id="loadingOverlay">
+                                <div class="spinner"></div>
+                                <div class="loading-text">正在分配座位...</div>
+                            </div>
+                            <div class="driver-seat">
+                                <i class="fas fa-user-shield"></i> 司机
+                            </div>
+                            <div class="empty-row">请设置参数并点击"开始抽签分配"按钮生成座位布局</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color legend-driver"></div>
+                        <span>司机座位</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color legend-available"></div>
+                        <span>可用座位</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color legend-reserved"></div>
+                        <span>预留座位</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color legend-occupied"></div>
+                        <span>已分配（双人）</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color legend-single"></div>
+                        <span>已分配（单人）</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color legend-single-occupied"></div>
+                        <span>单人占单座</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card results">
+            <h2><i class="fas fa-list-alt"></i> 分配结果</h2>
+            <div id="passengerResults">
+                <div class="empty-row">座位分配结果将显示在这里</div>
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <h3><i class="fas fa-info-circle"></i> 使用说明</h3>
+            <ul>
+                <li><strong>大巴车型选择</strong>：支持2+2普通大巴（左右各2座位）和2+1豪华大巴（左二右一）两种车型</li>
+                <li><strong>大巴座位布局</strong>：第一行为司机（单独），座位号为0，乘客座位号从1开始</li>
+                <li><strong>行号显示</strong>：每行座位左侧显示中文大写数字（壹、贰、叁...）</li>
+                <li><strong>预留座位</strong>：输入座位号（如"3 5 7"），这些座位将不会分配给乘客</li>
+                <li><strong>乘客信息</strong>：每行一组，双人组用"+"连接（如：张三+李四），单人单独一行</li>
+                <li><strong>抽签规则</strong>：双人组和单人组优先级相同，随机排序分配</li>
+                <li><span class="rule-highlight">单人乘客分配规则</span>：
+                    <ul style="padding-left: 20px; margin-top: 8px;">
+                        <li>优先分配到只有一个空位的位置（相邻座位已被预留）</li>
+                        <li>如果没有此类位置，则分配同一侧的两个座位</li>
+                    </ul>
+                </li>
+                <li><strong>分配原则</strong>：从前排开始分配，空座位留在后排</li>
+            </ul>
+        </div>
+        
+        <footer>
+            <p>© 2025 旅游大巴座位抽签系统 | 支持多种车型的公平座位分配解决方案 | 一路旅游管家仔</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const drawBtn = document.getElementById('drawBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const seatLayout = document.getElementById('seatLayout');
+            const passengerResults = document.getElementById('passengerResults');
+            const systemStatus = document.getElementById('systemStatus');
+            const seatUsage = document.getElementById('seatUsage');
+            const progressBar = document.getElementById('progressBar');
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            const busTypeInput = document.getElementById('busType');
+            const busTypeOptions = document.querySelectorAll('.bus-type-option');
+            
+            // 中文大写数字映射
+            const chineseNumbers = ['零', '壹', '贰', '叁', '肆', '伍', '陆', '柒', '捌', '玖', '拾'];
+            
+            // 设置车型选择事件
+            busTypeOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    busTypeOptions.forEach(opt => opt.classList.remove('active'));
+                    this.classList.add('active');
+                    busTypeInput.value = this.dataset.type;
+                });
+            });
+            
+            drawBtn.addEventListener('click', drawSeats);
+            resetBtn.addEventListener('click', resetSystem);
+            
+            // 示例数据
+            function drawSeats() {
+                // 显示加载动画
+                loadingOverlay.classList.add('active');
+                
+                // 更新系统状态
+                systemStatus.textContent = "正在分配座位...";
+                systemStatus.previousElementSibling.className = "status-indicator status-waiting";
+                
+                // 获取输入值
+                const totalSeats = parseInt(document.getElementById('totalSeats').value) || 21;
+                const reservedInput = document.getElementById('reservedSeats').value;
+                const passengerData = document.getElementById('passengerData').value;
+                const busType = busTypeInput.value; // 获取车型
+                
+                // 解析预留座位（使用空格分隔）
+                const reservedSeats = reservedInput.split(/\s+/)
+                    .map(s => parseInt(s.trim()))
+                    .filter(n => !isNaN(n) && n > 0); // 过滤掉无效值，司机座(0)默认预留
+                
+                // 添加司机座到预留
+                reservedSeats.push(0);
+                
+                // 解析乘客数据
+                const passengers = parsePassengerData(passengerData);
+                
+                // 验证数据
+                if (passengers.groups.length === 0) {
+                    alert('请输入有效的乘客信息！');
+                    systemStatus.textContent = "准备就绪";
+                    systemStatus.previousElementSibling.className = "status-indicator status-ready";
+                    loadingOverlay.classList.remove('active');
+                    return;
+                }
+                
+                if (totalSeats < 5) {
+                    alert('大巴总座位数至少为5（含司机）！');
+                    systemStatus.textContent = "准备就绪";
+                    systemStatus.previousElementSibling.className = "status-indicator status-ready";
+                    loadingOverlay.classList.remove('active');
+                    return;
+                }
+                
+                // 计算需要的乘客座位数
+                const passengerSeats = totalSeats - 1;
+                const requiredSeats = passengers.groups.reduce((acc, group) => acc + (group.length === 1 ? 1 : 2), 0);
+                
+                if (requiredSeats > passengerSeats) {
+                    alert(`座位不足！需要${requiredSeats}个乘客座位，但只有${passengerSeats}个可用座位。`);
+                    systemStatus.textContent = "准备就绪";
+                    systemStatus.previousElementSibling.className = "status-indicator status-ready";
+                    loadingOverlay.classList.remove('active');
+                    return;
+                }
+                
+                // 模拟处理延迟，展示动画
+                setTimeout(() => {
+                    // 创建座位布局
+                    const seatMap = createSeatMap(totalSeats, reservedSeats, busType);
+                    
+                    // 随机排序乘客组
+                    const shuffledGroups = shuffleArray(passengers.groups);
+                    
+                    // 分配座位
+                    assignSeats(seatMap, shuffledGroups, busType);
+                    
+                    // 显示座位布局
+                    displaySeatLayout(seatMap, totalSeats, busType);
+                    
+                    // 显示分配结果
+                    displayPassengerResults(seatMap, shuffledGroups);
+                    
+                    // 计算并显示座位使用率
+                    const occupiedSeats = seatMap.filter(seat => seat.occupied && seat.type !== 'driver').length;
+                    const usagePercentage = Math.round((occupiedSeats / passengerSeats) * 100);
+                    seatUsage.textContent = `${usagePercentage}%`;
+                    progressBar.style.width = `${usagePercentage}%`;
+                    
+                    // 更新系统状态
+                    systemStatus.textContent = "分配完成";
+                    systemStatus.previousElementSibling.className = "status-indicator status-ready";
+                    
+                    // 隐藏加载动画
+                    loadingOverlay.classList.remove('active');
+                }, 1500); // 1.5秒延迟模拟处理过程
+            }
+            
+            function parsePassengerData(data) {
+                const lines = data.split('\n').filter(line => line.trim() !== '');
+                const groups = [];
+                const passengers = [];
+                let groupId = 1;
+                
+                for (const line of lines) {
+                    if (line.includes('+')) {
+                        // 双人组
+                        const [p1, p2] = line.split('+').map(p => p.trim());
+                        groups.push([p1, p2]);
+                        passengers.push({name: p1, group: groupId, type: 'group'});
+                        passengers.push({name: p2, group: groupId, type: 'group'});
+                        groupId++;
+                    } else {
+                        // 单人
+                        groups.push([line.trim()]);
+                        passengers.push({name: line.trim(), group: groupId, type: 'single'});
+                        groupId++;
+                    }
+                }
+                
+                return { groups, passengers };
+            }
+            
+            function createSeatMap(totalSeats, reservedSeats, busType) {
+                const seatMap = [];
+                const isLuxury = busType === '2+1';
+                const seatsPerRow = isLuxury ? 3 : 4; // 豪华大巴每行3个座位，普通大巴每行4个
+                const rows = Math.ceil((totalSeats - 1) / seatsPerRow) + 1; // 包括司机行
+                
+                // 添加司机座位（0号）
+                seatMap.push({
+                    seatNumber: 0,
+                    row: 0,
+                    col: 0,
+                    type: 'driver',
+                    reserved: true,
+                    occupied: true,
+                    passenger: '司机'
+                });
+                
+                // 添加乘客座位（从1号开始）
+                let seatNum = 1;
+                for (let row = 1; row < rows; row++) {
+                    for (let col = 0; col < seatsPerRow; col++) {
+                        if (seatNum < totalSeats) {
+                            const reserved = reservedSeats.includes(seatNum);
+                            // 确定座位类型（左侧或右侧）
+                            let seatType;
+                            if (isLuxury) {
+                                seatType = col < 2 ? 'left' : 'right'; // 豪华大巴：前2列为左侧，后1列为右侧
+                            } else {
+                                seatType = col < 2 ? 'left' : 'right'; // 普通大巴：前2列为左侧，后2列为右侧
+                            }
+                            
+                            seatMap.push({
+                                seatNumber: seatNum,
+                                row,
+                                col,
+                                reserved,
+                                occupied: reserved,
+                                passenger: reserved ? '预留' : null,
+                                groupId: null,
+                                seatType: seatType
+                            });
+                            seatNum++;
+                        }
+                    }
+                }
+                
+                return seatMap;
+            }
+            
+            function shuffleArray(array) {
+                const shuffled = [...array];
+                for (let i = shuffled.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+                }
+                return shuffled;
+            }
+            
+            function assignSeats(seatMap, groups, busType) {
+                const isLuxury = busType === '2+1';
+                
+                // 筛选可用座位（非预留）
+                const availableSeats = seatMap.filter(seat => 
+                    !seat.reserved && seat.type !== 'driver' && !seat.occupied
+                );
+                
+                // 按行和列排序可用座位（前排优先）
+                availableSeats.sort((a, b) => {
+                    if (a.row !== b.row) return a.row - b.row;
+                    return a.col - b.col;
+                });
+                
+                // 分配座位给组
+                for (const group of groups) {
+                    if (group.length === 1) {
+                        // 尝试为单人乘客寻找只有一个空位的位置（相邻座位已被预留）
+                        const singleSeat = findSingleSeat(availableSeats, seatMap, busType);
+                        
+                        if (singleSeat) {
+                            // 分配这个座位给单人乘客
+                            assignSingleToSeat(group[0], singleSeat);
+                            
+                            // 从可用座位中移除
+                            const index = availableSeats.findIndex(s => s.seatNumber === singleSeat.seatNumber);
+                            if (index !== -1) {
+                                availableSeats.splice(index, 1);
+                            }
+                            continue;
+                        }
+                    }
+                    
+                    // 尝试查找同一排的连续座位
+                    let assigned = false;
+                    
+                    // 对于2+1豪华大巴，双人组只能分配在左侧
+                    if (!isLuxury || (isLuxury && group.length === 1)) {
+                        for (let i = 0; i < availableSeats.length - 1; i++) {
+                            const seat1 = availableSeats[i];
+                            const seat2 = availableSeats[i + 1];
+                            
+                            // 检查是否同一排且相邻（同一侧）
+                            if (seat1.row === seat2.row && 
+                                seat1.seatType === seat2.seatType &&
+                                Math.abs(seat1.col - seat2.col) === 1) {
+                                
+                                // 分配座位
+                                assignGroupToSeats(group, seat1, seat2);
+                                
+                                // 从可用座位中移除
+                                availableSeats.splice(i, 2);
+                                
+                                assigned = true;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // 如果找不到连续座位，分配任意两个可用座位（豪华大巴双人组只能分配到左侧）
+                    if (!assigned && group.length === 1 && availableSeats.length >= 1) {
+                        // 对于单人乘客，如果找不到两个连续座位，尝试再找一个单独座位
+                        const seat1 = availableSeats[0];
+                        assignSingleToSeat(group[0], seat1);
+                        availableSeats.splice(0, 1);
+                    } else if (!assigned && availableSeats.length >= 2) {
+                        // 对于豪华大巴，双人组只能分配到左侧
+                        if (isLuxury && group.length === 2) {
+                            // 查找左侧的两个座位
+                            const leftSeats = availableSeats.filter(s => s.seatType === 'left');
+                            if (leftSeats.length >= 2) {
+                                const seat1 = leftSeats[0];
+                                const seat2 = leftSeats[1];
+                                assignGroupToSeats(group, seat1, seat2);
+                                
+                                // 从可用座位中移除
+                                const index1 = availableSeats.findIndex(s => s.seatNumber === seat1.seatNumber);
+                                const index2 = availableSeats.findIndex(s => s.seatNumber === seat2.seatNumber);
+                                if (index1 !== -1 && index2 !== -1) {
+                                    availableSeats.splice(Math.min(index1, index2), 2);
+                                }
+                                assigned = true;
+                            }
+                        } else {
+                            const seat1 = availableSeats[0];
+                            const seat2 = availableSeats[1];
+                            assignGroupToSeats(group, seat1, seat2);
+                            availableSeats.splice(0, 2);
+                        }
+                    }
+                }
+            }
+            
+            function findSingleSeat(availableSeats, seatMap, busType) {
+                const isLuxury = busType === '2+1';
+                
+                // 寻找只有一个空位的位置（相邻座位已被预留）
+                for (const seat of availableSeats) {
+                    // 获取同排同侧的相邻座位
+                    const adjacentSeats = seatMap.filter(s => 
+                        s.row === seat.row && 
+                        s.seatType === seat.seatType && 
+                        s.seatNumber !== seat.seatNumber
+                    );
+                    
+                    // 对于豪华大巴的右侧座位，只有单座
+                    if (isLuxury && seat.seatType === 'right') {
+                        return seat; // 右侧总是单座
+                    }
+                    
+                    // 检查相邻座位是否都被预留或占用
+                    const allAdjacentReserved = adjacentSeats.every(s => s.reserved || s.occupied);
+                    
+                    if (adjacentSeats.length > 0 && allAdjacentReserved) {
+                        return seat;
+                    }
+                }
+                
+                return null;
+            }
+            
+            function assignSingleToSeat(passenger, seat) {
+                // 生成随机组ID
+                const groupId = Math.floor(Math.random() * 1000000);
+                
+                seat.occupied = true;
+                seat.passenger = passenger;
+                seat.groupId = groupId;
+                seat.singleOccupancy = true;
+                seat.singleOccupied = true; // 标记为单人占单座
+            }
+            
+            function assignGroupToSeats(group, seat1, seat2) {
+                // 生成随机组ID
+                const groupId = Math.floor(Math.random() * 1000000);
+                
+                if (group.length === 1) {
+                    // 单人组分配两个座位
+                    seat1.occupied = true;
+                    seat1.passenger = group[0];
+                    seat1.groupId = groupId;
+                    seat1.singleOccupancy = true;
+                    
+                    seat2.occupied = true;
+                    seat2.passenger = null;
+                    seat2.groupId = groupId;
+                    seat2.singleOccupancy = true;
+                } else {
+                    // 双人组
+                    seat1.occupied = true;
+                    seat1.passenger = group[0];
+                    seat1.groupId = groupId;
+                    
+                    seat2.occupied = true;
+                    seat2.passenger = group[1];
+                    seat2.groupId = groupId;
+                }
+            }
+            
+            function displaySeatLayout(seatMap, totalSeats, busType) {
+                const isLuxury = busType === '2+1';
+                
+                // 按行分组座位
+                const rows = {};
+                seatMap.forEach(seat => {
+                    if (!rows[seat.row]) {
+                        rows[seat.row] = [];
+                    }
+                    rows[seat.row].push(seat);
+                });
+                
+                // 生成HTML
+                let html = '<div class="bus">';
+                html += '<div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div><div class="loading-text">正在分配座位...</div></div>';
+                
+                // 司机行
+                const driverSeat = rows[0][0];
+                html += `
+                    <div class="driver-seat">
+                        <i class="fas fa-user-shield"></i> 司机
+                    </div>
+                `;
+                
+                // 乘客行
+                const passengerRows = Object.keys(rows)
+                    .filter(key => key != 0)
+                    .sort((a, b) => parseInt(a) - parseInt(b));
+                
+                html += '<div class="seat-rows">';
+                for (const rowKey of passengerRows) {
+                    const rowSeats = rows[rowKey];
+                    
+                    // 左侧座位
+                    const leftSeats = rowSeats.filter(seat => seat.col < (isLuxury ? 2 : 2)).sort((a, b) => a.col - b.col);
+                    // 右侧座位
+                    const rightSeats = rowSeats.filter(seat => seat.col >= (isLuxury ? 2 : 2)).sort((a, b) => a.col - b.col);
+                    
+                    // 获取中文大写行号
+                    const rowNumber = getChineseNumber(parseInt(rowKey));
+                    
+                    html += `<div class="seat-row">`;
+                    html += `<div class="row-number">${rowNumber}</div>`;
+                    
+                    // 左侧座位组
+                    html += '<div class="left-seats">';
+                    for (const seat of leftSeats) {
+                        let seatClass = 'seat';
+                        if (seat.type === 'driver') seatClass += ' reserved';
+                        else if (seat.reserved) seatClass += ' reserved';
+                        else if (seat.occupied) {
+                            if (seat.singleOccupied) seatClass += ' single-occupied';
+                            else if (seat.singleOccupancy) seatClass += ' single';
+                            else seatClass += ' occupied';
+                        }
+                        
+                        // 添加动画延迟
+                        const animationDelay = (seat.row * 0.1) + (seat.col * 0.05) + 's';
+                        
+                        html += `
+                            <div class="${seatClass}" style="animation-delay: ${animationDelay}">
+                                <div class="seat-number">${seat.seatNumber}</div>
+                                ${seat.passenger ? `<div class="passenger-name">${seat.passenger}</div>` : ''}
+                            </div>
+                        `;
+                    }
+                    html += '</div>'; // 结束 left-seats
+                    
+                    // 过道
+                    html += '<div class="aisle"></div>';
+                    
+                    // 右侧座位组
+                    html += '<div class="right-seats">';
+                    for (const seat of rightSeats) {
+                        let seatClass = 'seat';
+                        if (seat.type === 'driver') seatClass += ' reserved';
+                        else if (seat.reserved) seatClass += ' reserved';
+                        else if (seat.occupied) {
+                            if (seat.singleOccupied) seatClass += ' single-occupied';
+                            else if (seat.singleOccupancy) seatClass += ' single';
+                            else seatClass += ' occupied';
+                        }
+                        
+                        // 添加动画延迟
+                        const animationDelay = (seat.row * 0.1) + (seat.col * 0.05) + 's';
+                        
+                        html += `
+                            <div class="${seatClass}" style="animation-delay: ${animationDelay}">
+                                <div class="seat-number">${seat.seatNumber}</div>
+                                ${seat.passenger ? `<div class="passenger-name">${seat.passenger}</div>` : ''}
+                            </div>
+                        `;
+                    }
+                    html += '</div>'; // 结束 right-seats
+                    
+                    html += '</div>'; // 结束 seat-row
+                }
+                html += '</div>'; // 结束 seat-rows
+                html += '</div>'; // 结束 bus
+                
+                const busContainer = document.createElement('div');
+                busContainer.className = 'bus-container';
+                busContainer.innerHTML = html;
+                seatLayout.innerHTML = '';
+                seatLayout.appendChild(busContainer);
+            }
+            
+            // 获取中文大写数字
+            function getChineseNumber(num) {
+                if (num <= 10) {
+                    return chineseNumbers[num];
+                } else {
+                    // 处理大于10的数字
+                    return num;
+                }
+            }
+            
+            function displayPassengerResults(seatMap, groups) {
+                // 收集分配结果
+                const occupiedSeats = seatMap.filter(seat => 
+                    seat.occupied && seat.passenger && seat.type !== 'driver'
+                );
+                
+                // 按组ID分组
+                const groupsMap = {};
+                occupiedSeats.forEach(seat => {
+                    if (!groupsMap[seat.groupId]) {
+                        groupsMap[seat.groupId] = [];
+                    }
+                    groupsMap[seat.groupId].push(seat);
+                });
+                
+                // 生成HTML
+                let html = '<div class="passenger-list">';
+                
+                for (const groupId in groupsMap) {
+                    const seats = groupsMap[groupId];
+                    const isSingle = seats.length === 1;
+                    const isSingleOccupied = seats.length === 1 && seats[0].singleOccupied;
+                    
+                    let itemClass = 'passenger-item';
+                    if (isSingle) {
+                        itemClass += isSingleOccupied ? ' single-occupied' : ' single';
+                    } else {
+                        itemClass += ' group';
+                    }
+                    
+                    html += `
+                        <div class="${itemClass}" style="animation-delay: ${Math.random() * 0.3}s">
+                            <div class="group-header">
+                                ${isSingle ? 
+                                    (isSingleOccupied ? 
+                                        '<i class="fas fa-user-clock"></i> 单人占单座' : 
+                                        '<i class="fas fa-user"></i> 单人乘客') : 
+                                    '<i class="fas fa-user-friends"></i> 同行乘客'}
+                            </div>
+                    `;
+                    
+                    for (const seat of seats) {
+                        html += `
+                            <div class="passenger">
+                                <i class="fas fa-user"></i> ${seat.passenger} - 座位 ${seat.seatNumber}
+                            </div>
+                        `;
+                    }
+                    
+                    html += '</div>';
+                }
+                
+                // 添加未分配乘客（预留座位）
+                const unassigned = groups.flat().filter(passenger => 
+                    !occupiedSeats.some(seat => seat.passenger === passenger)
+                );
+                
+                if (unassigned.length > 0) {
+                    html += `
+                        <div class="passenger-item" style="grid-column: 1 / -1; background: linear-gradient(135deg, #ffebee, #ffcdd2); animation-delay: 0.4s">
+                            <div class="group-header"><i class="fas fa-exclamation-triangle"></i> 未分配乘客（预留座位或座位不足）</div>
+                    `;
+                    
+                    for (const passenger of unassigned) {
+                        html += `<div class="passenger"><i class="fas fa-user"></i> ${passenger}</div>`;
+                    }
+                    
+                    html += '</div>';
+                }
+                
+                html += '</div>'; // 结束 passenger-list
+                passengerResults.innerHTML = html;
+            }
+            
+            function resetSystem() {
+                document.getElementById('totalSeats').value = '21';
+                document.getElementById('reservedSeats').value = '3 5 7 9';
+                document.getElementById('passengerData').value = '张三+李四\n王五\n赵六+钱七\n孙八\n周九+吴十\n郑十一\n钱十二+孙十三\n林十四\n杨十五\n陈十六';
+                seatLayout.innerHTML = '<div class="bus-container"><div class="bus"><div class="driver-seat"><i class="fas fa-user-shield"></i> 司机</div><div class="empty-row">请设置参数并点击"开始抽签分配"按钮生成座位布局</div></div></div>';
+                passengerResults.innerHTML = '<div class="empty-row">座位分配结果将显示在这里</div>';
+                seatUsage.textContent = '0%';
+                progressBar.style.width = '0%';
+                systemStatus.textContent = "准备就绪";
+                systemStatus.previousElementSibling.className = "status-indicator status-ready";
+                
+                // 重置车型选择
+                busTypeOptions.forEach(opt => opt.classList.remove('active'));
+                busTypeOptions[0].classList.add('active');
+                busTypeInput.value = '2+2';
+            }
+        });
+    </script>
+</body>
+</html>
